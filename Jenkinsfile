@@ -4,51 +4,46 @@ pipeline {
     environment {
         FRONTEND_IMAGE = "sadullaa/book-frontend:${BUILD_NUMBER}"
         BACKEND_IMAGE  = "sadullaa/book-backend:${BUILD_NUMBER}"
-        KUBECONFIG = credentials('k8s-config')  // Stored kubeconfig secret
     }
 
     stages {
         stage('Clone Repository') {
             steps {
-                echo "📦 Cloning repository..."
-                git branch: 'master', url: 'https://github.com/Sadulla0123/BookReview.git'
+                echo "📦 Cloning repository from GitHub..."
+                git branch: 'main', url: 'https://github.com/Sadulla0123/BookReview.git'
+
+                echo "📂 Listing workspace files..."
+                bat "dir"
             }
         }
 
         stage('Build Docker Images') {
             steps {
                 script {
-                    try {
-                        echo "🐳 Building frontend image..."
-                        bat "docker build -t ${FRONTEND_IMAGE} ./frontend"
-                        
-                        echo "🐳 Building backend image..."
-                        bat "docker build -t ${BACKEND_IMAGE} ./backend"
-                    } catch (Exception e) {
-                        error("Docker build failed: ${e.message}")
-                    }
+                    echo "🐳 Building frontend Docker image..."
+                    bat "docker build -t ${FRONTEND_IMAGE} ./frontend"
+
+                    echo "🐳 Building backend Docker image..."
+                    bat "docker build -t ${BACKEND_IMAGE} ./backend"
                 }
             }
         }
 
-        stage('Push to DockerHub') {
+        stage('Push Docker Images to DockerHub') {
             steps {
-                withCredentials([
-                    usernamePassword(
-                        credentialsId: 'dockerhub-creds',
-                        usernameVariable: 'DOCKER_USER',
-                        passwordVariable: 'DOCKER_PASS'
-                    )
-                ]) {
+                withCredentials([usernamePassword(credentialsId: 'dockerhub-creds', usernameVariable: 'DOCKER_USER', passwordVariable: 'DOCKER_PASS')]) {
                     script {
-                        retry(3) {
-                            bat """
-                                docker login -u %DOCKER_USER% -p %DOCKER_PASS%
-                                docker push ${FRONTEND_IMAGE}
-                                docker push ${BACKEND_IMAGE}
-                                docker logout
-                            """
-                        }
+                        echo "🔐 Logging into DockerHub..."
+                        bat "docker login -u %DOCKER_USER% -p %DOCKER_PASS%"
+
+                        echo "📤 Pushing frontend image to DockerHub..."
+                        bat "docker push ${FRONTEND_IMAGE}"
+
+                        echo "📤 Pushing backend image to DockerHub..."
+                        bat "docker push ${BACKEND_IMAGE}"
+
+                        echo "🔒 Logging out from DockerHub..."
+                        bat "docker logout"
                     }
                 }
             }
@@ -57,22 +52,15 @@ pipeline {
         stage('Deploy to Kubernetes') {
             steps {
                 script {
-                    // Verify cluster access first
-                    bat "kubectl cluster-info"
-                    
-                    // Apply manifests with validation
-                    bat "kubectl apply -f k8s/frontend-deployment.yaml"
-                    bat "kubectl apply -f k8s/frontend-service.yaml"
-                    bat "kubectl apply -f k8s/backend-deployment.yaml"
-                    bat "kubectl apply -f k8s/backend-service.yaml"
+                    echo "🚀 Applying Kubernetes manifests..."
+                    bat 'kubectl apply -f k8s/frontend-deployment.yaml'
+                    bat 'kubectl apply -f k8s/frontend-service.yaml'
+                    bat 'kubectl apply -f k8s/backend-deployment.yaml'
+                    bat 'kubectl apply -f k8s/backend-service.yaml'
 
-                    // Rolling update
-                    bat "kubectl rollout restart deployment/frontend-deployment"
-                    bat "kubectl rollout restart deployment/backend-deployment"
-                    
-                    // Verify deployment status
-                    bat "kubectl rollout status deployment/frontend-deployment --timeout=300s"
-                    bat "kubectl rollout status deployment/backend-deployment --timeout=300s"
+                    echo "🚀 Updating Kubernetes deployments with new image tags..."
+                    bat "kubectl set image deployment/frontend-deployment frontend=${FRONTEND_IMAGE} --record"
+                    bat "kubectl set image deployment/backend-deployment backend=${BACKEND_IMAGE} --record"
                 }
             }
         }
@@ -80,23 +68,17 @@ pipeline {
 
     post {
         always {
-            cleanWs()
-            bat "docker rmi ${FRONTEND_IMAGE} || echo 'Frontend image not found'"
-            bat "docker rmi ${BACKEND_IMAGE} || echo 'Backend image not found'"
+            echo "🧹 Cleaning up local Docker images..."
+            bat "docker rmi ${FRONTEND_IMAGE} || exit 0"
+            bat "docker rmi ${BACKEND_IMAGE} || exit 0"
         }
-        
+
         success {
-            slackSend(
-                channel: '#deployments',
-                message: "✅ Successfully deployed build ${BUILD_NUMBER}!\nFrontend: ${FRONTEND_IMAGE}\nBackend: ${BACKEND_IMAGE}"
-            )
+            echo "✅ Pipeline executed successfully!"
         }
-        
+
         failure {
-            slackSend(
-                channel: '#deployments',
-                message: "❌ Deployment failed for build ${BUILD_NUMBER}!\nCheck logs: ${BUILD_URL}"
-            )
+            echo "❌ Pipeline failed. Please check the logs for errors."
         }
     }
 }
