@@ -58,7 +58,7 @@ pipeline {
             steps {
                 script {
                     // Verify cluster access first
-                    bat "kubectl cluster-info"
+                    
                     
                     // Apply manifests with validation
                     bat "kubectl apply -f k8s/frontend-deployment.yaml --validate=true"
