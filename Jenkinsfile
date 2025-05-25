@@ -2,15 +2,15 @@ pipeline {
     agent any
 
     environment {
-        FRONTEND_IMAGE = "vinayashreer/book-frontend:${BUILD_NUMBER}"
-        BACKEND_IMAGE  = "vinayashreer/book-backend:${BUILD_NUMBER}"
+        FRONTEND_IMAGE = "sadullaa/book-frontend:${BUILD_NUMBER}"
+        BACKEND_IMAGE  = "sadullaa/book-backend:${BUILD_NUMBER}"
     }
 
     stages {
         stage('Clone Repository') {
             steps {
                 echo "📦 Cloning repository from GitHub..."
-                git branch: 'main', url: 'https://github.com/vinayashree06/DevOpsP'
+                git branch: 'main', url: 'https://github.com/Sadulla0123/BookReview.git'
 
                 echo "📂 Listing workspace files..."
                 bat "dir"

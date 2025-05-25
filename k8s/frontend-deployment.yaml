@@ -14,7 +14,7 @@ spec:
     spec:
       containers:
         - name: frontend
-          image: vinayashreer/book-frontend:latest  # This will be updated in Jenkins
+          image: sadullaa/book-frontend:latest  # This will be updated in Jenkins
           ports:
             - containerPort: 80  # NGINX default port
 ---
