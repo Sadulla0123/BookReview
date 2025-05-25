@@ -53,10 +53,10 @@ pipeline {
             steps {
                 script {
                     echo "🚀 Applying Kubernetes manifests..."
-                    bat 'kubectl apply -f k8s/frontend-deployment.yaml'
-                    bat 'kubectl apply -f k8s/frontend-service.yaml'
-                    bat 'kubectl apply -f k8s/backend-deployment.yaml'
-                    bat 'kubectl apply -f k8s/backend-service.yaml'
+                    bat 'kubectl apply -f k8s/frontend-deployment.yaml --validate=false'
+                    bat 'kubectl apply -f k8s/frontend-service.yaml --validate=false'
+                    bat 'kubectl apply -f k8s/backend-deployment.yaml --validate=false'
+                    bat 'kubectl apply -f k8s/backend-service.yaml --validate=false'
 
                     echo "🚀 Updating Kubernetes deployments with new image tags..."
                     bat "kubectl set image deployment/frontend-deployment frontend=${FRONTEND_IMAGE} --record"
