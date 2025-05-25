@@ -54,12 +54,21 @@ pipeline {
             }
         }
 
+        stage('Update Deployment YAMLs') {
+            steps {
+                script {
+                    // Replace REPLACE_TAG_HERE with the actual BUILD_NUMBER tag
+                    bat """
+                    powershell -Command "(Get-Content k8s/frontend-deployment.yaml) -replace 'REPLACE_TAG_HERE', '${BUILD_NUMBER}' | Set-Content k8s/frontend-deployment.yaml"
+                    powershell -Command "(Get-Content k8s/backend-deployment.yaml) -replace 'REPLACE_TAG_HERE', '${BUILD_NUMBER}' | Set-Content k8s/backend-deployment.yaml"
+                    """
+                }
+            }
+        }
+
         stage('Deploy to Kubernetes') {
             steps {
                 script {
-                    // Verify cluster access first
-                    
-                    
                     // Apply manifests with validation
                     bat "kubectl apply -f k8s/frontend-deployment.yaml --validate=true"
                     bat "kubectl apply -f k8s/frontend-service.yaml"
