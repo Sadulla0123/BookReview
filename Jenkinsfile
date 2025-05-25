@@ -10,7 +10,7 @@ pipeline {
         stage('Clone Repository') {
             steps {
                 echo "📦 Cloning repository from GitHub..."
-                git branch: 'main', url: 'https://github.com/Sadulla0123/BookReview.git'
+                git branch: 'master', url: 'https://github.com/Sadulla0123/BookReview.git'
 
                 echo "📂 Listing workspace files..."
                 bat "dir"
